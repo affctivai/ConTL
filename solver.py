@@ -34,13 +34,13 @@ class Solver(object):
             self.saveroot = saveroot = os.path.join(self.saveroot,'No LSTM')
         self.saved_model_name = saved_model_name='sub%s_model.ckpt'%self.train_config.subject
         self.save_optim_name=save_optim_name = 'sub%s_optim_best.std'%self.train_config.subject
-        
-        if not os.path.exists(saveroot):
+        '''
+        if not os.path.exists('checkpoints'):
+            os.mkdir('checkpoints')
+            os.mkdir(os.path.join('checkpoints', self.train_config.model_type))
             os.mkdir(saveroot)
-
-        if not os.path.exists(os.path.join(saveroot, self.train_config.data_choice)):
             os.mkdir(os.path.join(saveroot, self.train_config.data_choice))
-
+        '''
         curr_patience = patience = 7
         best_valid_loss=float('inf')
         num_trials=self.train_config.num_trials
@@ -78,16 +78,15 @@ class Solver(object):
     def train_help(self, epoch, data_loader):
         left_epochs=4
         
-        for i, (features, labels) in enumerate(data_loader):
+        for features, labels in data_loader:
             features=features.to(self.device)
-           
+            
             if left_epochs == 4:
                 self.optimizer.zero_grad()
                     
             left_epochs-=1
             labels = labels.to(self.device)
-
-            features = torch.unsqueeze(features, axis=1)
+            
            
             outputs = self.model(features)
           
@@ -113,6 +112,8 @@ class Solver(object):
 
             for features, labels in data_loader:
                 features = features.to(self.device)
+                
+
                 labels = labels.to(self.device)
 
                 epoch_loss, correct, total, epoch_f1_score=self.eval_help(features, labels, epoch_loss, epoch_f1_score, total, correct)
@@ -123,7 +124,7 @@ class Solver(object):
         return epoch_loss,(100 * (correct / total)), 100*epoch_f1_score
 
     def eval_help(self,features, labels, epoch_loss, epoch_f1_score, total, correct):
-        features = torch.unsqueeze(features, axis=1)
+
 
         outputs = self.model(features)
 

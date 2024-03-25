@@ -1,7 +1,7 @@
 #user-defined libraries.
 from config import get_config
 from solver import Solver
-from utils.tools import getPathList, seed4getFeatureLabel, savePreprocessedDeapData, getDeapData, save3Ddataset
+from utils.tools import getPathList, getSEED4Data, savePreprocessedDeapData, getDeapData, save3Ddataset
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
@@ -17,18 +17,13 @@ class CusEEGDataset(torch.utils.data.Dataset):
         self.label_list = label_list
 
     def __getitem__(self, index):
+        if self.train_config.model_type=='ConTL':
+            self.feature_list[index]=np.reshape(self.feature_list[index], (self.feature_list[index].shape[0]* self.feature_list[index].shape[1]))
+           
+            if self.train_config.data_choice == 'deap':
+                self.feature_list[index] = np.resize(self.feature_list[index], [310,])        
+            self.feature_list[index] = np.expand_dims(self.feature_list[index], axis=0)   
         
-        if self.train_config.data_choice in ['deap', 'dreamer']:
-            if not self.train_config.model_type =='DGCNN':
-                self.feature_list[index] = np.resize(self.feature_list[index], [310,])
-
-        if self.train_config.model_type=='EEGNet':
-            self.feature_list[index] = np.resize(self.feature_list[index], [120,64]) #eegNet
-        elif not self.train_config.model_type =='DGCNN':
-            self.feature_list[index] = np.reshape(self.feature_list[index], [310,])
-        
-        if self.train_config.data_choice=='dreamer' and self.train_config.model_type=='DGCNN':
-            self.feature_list[index] = np.asarray(self.feature_list[index])
         feature = torch.from_numpy(self.feature_list[index]).float()
         
         label = torch.from_numpy(np.asarray(self.label_list[index])).long()
@@ -189,9 +184,10 @@ def run(train_config):
         if train_config.data_choice=='deap':
             train_x, test_x, train_y, test_y= getDeapData(train_config)    
         elif train_config.data_choice=='4':
-            train_x, test_x, train_y, test_y = seed4getFeatureLabel(file_map[train_config.subject])
-
+            train_x, test_x, train_y, test_y = getSEED4Data(file_map[train_config.subject])
+        
         train_x, val_x, train_y, val_y = train_test_split(train_x, train_y, test_size=0.3, random_state=7)
+        
         test_acc, test_f1_score = train(train_x, val_x, test_x, train_y, val_y, test_y)
         test_acc_list.append(test_acc)
         test_f1_list.append(test_f1_score)
@@ -204,7 +200,7 @@ def run(train_config):
     saveResults(train_config, subject_test_acc_avg, subject_test_acc_std, subject_test_f1_avg, subject_test_f1_std)
             
 if __name__=='__main__':
-    SEED=1234
+    SEED=336
     torch.manual_seed(SEED)
     torch.cuda.manual_seed_all(SEED)
     torch.backends.cudnn.deterministic = True
