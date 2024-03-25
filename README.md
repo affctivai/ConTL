@@ -23,7 +23,7 @@ bash run.sh
 If this code is useful for your research, please cite us at:
 
 ```
-@article{kang2024ConTL,
+@inproceedings{kang2024ConTL,
   title={Cascading global and sequential temporal representations with local context modeling for EEG-based emotion recognition},
   author={Kang, Hyunwook and Choi, Jin Woo and Kim, Byung Hyung},
   conference={International Conference on Pattern Recognition},
