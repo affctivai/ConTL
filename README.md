@@ -1,5 +1,13 @@
 # ConTL
 
+Code for the [ICPR 2024](https://icpr2024.org/) paper [Cascading global and sequential temporal representations with local context modeling for EEG-based emotion recognition](archive link)
+
+<p align="center">
+  <img width="600" src="ConTL-pic.png">
+</p>
+
+### Citation
+
 If this code is useful for your research, please cite us at:
 
 ```
@@ -10,3 +18,7 @@ If this code is useful for your research, please cite us at:
   year={2024}
 }
 ```
+
+### Contact
+
+For any quetions, please email at [hyunwook.kang@inha.edu](mailto:hyunwook.kang@inha.edu)
