@@ -175,11 +175,11 @@ class ConTL(nn.Module):
         padded_h1, _ = pad_packed_sequence(packed_h1)
         packed_h1 = pack_padded_sequence(padded_h1, lengths)
         _, (final_h2, _) = self.eeg_rnn2(packed_h1)
-        h = torch.cat((final_h1, final_h2), dim=2).permute(1, 0, 2).contiguous().view(batch_size, -1)
+        o = torch.cat((final_h1, final_h2), dim=2).permute(1, 0, 2).contiguous().view(batch_size, -1)
     
         o = self.fc(o)
         
-        return h, o
+        return o
 
     def forward(self, x):
         o=self.convNet(x)
@@ -192,12 +192,12 @@ class ConTL(nn.Module):
         o=self.transformer_encoder(o)
         
         if self.args.lstm:        
-            h, o = sLSTM(x)
+            o = sLSTM(x)
         else:
-            h=torch.squeeze(o,axis=0)            
-            o=self.fc(h)
+            o=torch.squeeze(o,axis=0)            
+            o=self.fc(o)
 
-        return h, o
+        return o
 
 
 
