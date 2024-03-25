@@ -1,7 +1,7 @@
 #user-defined libraries.
 from config import get_config
 from solver import Solver
-from utils.tools import getPathList, getSEED4Data, savePreprocessedDeapData, getDeapData, save3Ddataset
+from utils.tools import getPathList, getSEED4Data
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
