@@ -8,8 +8,8 @@ Code for the [ICPR 2024](https://icpr2024.org/) paper [Cascading global and sequ
 
 ### Data Download
 
-Download [SEED-IV](https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html)
-Download [DEAP](https://www.eecs.qmul.ac.uk/mmv/datasets/deap/)
+ - Download [SEED-IV](https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html)
+ - Download [DEAP](https://www.eecs.qmul.ac.uk/mmv/datasets/deap/)
 
 ### Citation
 
