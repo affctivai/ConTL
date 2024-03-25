@@ -9,8 +9,7 @@ Code for the [ICPR 2024](https://icpr2024.org/) paper Cascading global and seque
 ### Data Download and set up environments
 
  - Download [SEED-IV](https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html)
- - Download [DEAP](https://www.eecs.qmul.ac.uk/mmv/datasets/deap/)
- - set seed_four_path and deap_path in run.sh file to their respective paths
+ - set seed_four_path in run.sh file to its respective path and run the following command.
 
 ```
 bash run.sh
