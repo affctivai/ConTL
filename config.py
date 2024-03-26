@@ -25,7 +25,7 @@ def get_config(parse=True, **optional_kwargs):
     parser.add_argument('--subject', type=str, default='1')
     parser.add_argument('--lstm', action='store_true')
     parser.add_argument('--save_file_name', required=True)
-    parser.add_argument('--n_units', type=int, default=44)
+    parser.add_argument('--n_units', type=int, default=106)
     
     if parse:
         args=parser.parse_args()
