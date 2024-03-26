@@ -13,19 +13,19 @@ class ConTL(nn.Module):
         super(ConTL, self).__init__()
 
         self.args=args
-        lstm_hidden_size=8        
+        lstm_hidden_size=args.lstm_hidden_size        
         n_units=50
         self.cnn = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=64, kernel_size=4, stride=2),
-            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=4, stride=2),
+            nn.Conv1d(in_channels=64, out_channels=64, kernel_size=4, stride=2),
             nn.LeakyReLU(),
-            nn.BatchNorm1d(128),
+            nn.BatchNorm1d(64),
             nn.Dropout(0.2),
         )
 
         self.fc_layer=nn.Sequential(
             Flatten(),
-            nn.Linear(9728,n_units)            
+            nn.Linear(4864,n_units)            
         )
 
 
@@ -35,7 +35,7 @@ class ConTL(nn.Module):
         rnn = nn.LSTM
 
         self.eeg_rnn1 = rnn(n_units, int(lstm_hidden_size), bidirectional = True)
-        self.eeg_rnn2 = rnn(2*int(lstm_hidden_size), int(lstm_hidden_size), bidirectional = True)
+        self.eeg_rnn2 = rnn(int(lstm_hidden_size), int(lstm_hidden_size), bidirectional = True)
         
         if args.lstm:
             fc_in_features=4*int(lstm_hidden_size)
@@ -51,16 +51,13 @@ class ConTL(nn.Module):
 
     def sLSTM(self, x, lengths):
         batch_size = lengths.size(0)
-        lengths = lengths.detach().cpu().numpy()
-        packed_seq = pack_padded_sequence(x, lengths)
-        packed_h1, (final_h1, _) = self.eeg_rnn1(packed_seq)
-        padded_h1, _ = pad_packed_sequence(packed_h1)
-        packed_h1 = pack_padded_sequence(padded_h1, lengths)
-        _, (final_h2, _) = self.eeg_rnn2(packed_h1)
+        packed_h1, (final_h1, _) = self.eeg_rnn1(x)
+        _, (final_h2, _) = self.eeg_rnn2(final_h1)
+
         o = torch.cat((final_h1, final_h2), dim=2).permute(1, 0, 2).contiguous().view(batch_size, -1)
-    
+
         o = self.fc(o)
-        
+
         return o
 
     def forward(self, x):
