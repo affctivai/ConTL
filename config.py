@@ -21,10 +21,12 @@ def get_config(parse=True, **optional_kwargs):
     parser.add_argument('--n-classes', required=True, type=int, help='number of classes')
     parser.add_argument('--num_trials', type=int, default=2)
     parser.add_argument('--label_type', default='valence_labels')
-    parser.add_argument('--f_units', type=int, default=50)
+    parser.add_argument('--lstm_hidden_size', type=int, default=8)
     parser.add_argument('--subject', type=str, default='1')
     parser.add_argument('--lstm', action='store_true')
     parser.add_argument('--save_file_name', required=True)
+    parser.add_argument('--n_units', type=int, default=50)
+    
     if parse:
         args=parser.parse_args()
 
