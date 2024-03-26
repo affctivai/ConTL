@@ -14,7 +14,7 @@ class ConTL(nn.Module):
 
         self.args=args
         lstm_hidden_size=args.lstm_hidden_size        
-        n_units=50
+        n_units=args.n_units
         self.cnn = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=64, kernel_size=4, stride=2),
             nn.Conv1d(in_channels=64, out_channels=64, kernel_size=4, stride=2),
