@@ -81,7 +81,7 @@ def saveResults(args, acc_avg, acc_std, f1_avg, f1_std):
     if args.w_mode=='w':
         f.write('LSTM,')
         f.write('label_type,')
-        f.write('f_units,')
+        f.write('lstm_hidden_units,')
         f.write('model,')
         f.write('classification accuracy,')
         f.write('acc std,')
@@ -92,7 +92,7 @@ def saveResults(args, acc_avg, acc_std, f1_avg, f1_std):
         f.write('\n')
     f.write(str(args.lstm)+',')
     f.write(args.label_type+',')
-    f.write(str(args.f_units)+',')
+    f.write(str(args.lstm_hidden_size)+',')
     f.write(args.model_type+',')
     f.write(str(round(acc_avg,2))+',')
     f.write(str(round(acc_std,2))+',')
