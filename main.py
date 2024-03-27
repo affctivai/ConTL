@@ -33,20 +33,6 @@ class CusEEGDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.label_list)
 
-def get_label_cnt_map(y):
-
-    label_cnt_map=dict()
-    for i in range(len(y)):
-        if y[i] not in label_cnt_map:
-            label_cnt_map[y[i]]=1
-        else:
-            label_cnt_map[y[i]]+=1
-    return label_cnt_map
-
-subject_train_feature_dict={}
-subject_train_label_dict={}
-subject_test_feature_dict={}
-subject_test_label_dict={}
 
 def train(X_train, X_val, X_test, y_train, y_val, y_test):
 

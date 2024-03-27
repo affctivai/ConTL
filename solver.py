@@ -6,6 +6,18 @@ import models
 import torch.optim as optim
 import os
 
+def create_dir(full_path,new_dir_path,cur_dir_idx):
+    splits = full_path.split(os.path.sep)
+
+    if cur_dir_idx!=0:
+        new_dir_path=os.path.join(new_dir_path,splits[cur_dir_idx])
+        
+    if not os.path.exists(new_dir_path):
+        os.mkdir(new_dir_path)
+
+    if cur_dir_idx <(len(splits)-1):
+        create_dir(full_path, new_dir_path,cur_dir_idx+1)
+
 class Solver(object):
     def __init__(self, train_config, train_data_loader, val_data_loader, test_data_loader):
         self.train_config = train_config
@@ -27,20 +39,18 @@ class Solver(object):
     '''Code adapted from: https://github.com/declare-lab/MISA/blob/master/src/solver.py'''
     def train(self):
 
-        self.saveroot = saveroot=f'./checkpoints/{self.train_config.model_type}'
+        self.saveroot = saveroot=f'checkpoints/{self.train_config.model_type}'
         if self.train_config.lstm:
             self.saveroot = saveroot = os.path.join(self.saveroot,'LSTM')
         else:
             self.saveroot = saveroot = os.path.join(self.saveroot,'No LSTM')
         self.saved_model_name = saved_model_name='sub%s_model.ckpt'%self.train_config.subject
         self.save_optim_name=save_optim_name = 'sub%s_optim_best.std'%self.train_config.subject
-        '''
-        if not os.path.exists('checkpoints'):
-            os.mkdir('checkpoints')
-            os.mkdir(os.path.join('checkpoints', self.train_config.model_type))
-            os.mkdir(saveroot)
-            os.mkdir(os.path.join(saveroot, self.train_config.data_choice))
-        '''
+  
+        save_path= os.path.join(saveroot,self.train_config.data_choice)
+        '''create save_path if it does not exist'''
+        create_dir(save_path, save_path.split(os.path.sep)[0], 0) 
+
         curr_patience = patience = 7
         best_valid_loss=float('inf')
         num_trials=self.train_config.num_trials
