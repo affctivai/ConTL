@@ -1,4 +1,4 @@
-# ConTL
+# ConTL : Cascading global and sequential temporal representations with local context modeling for EEG-based emotion recognition
 
 Code for the [ICPR 2024](https://icpr2024.org/) paper Cascading global and sequential temporal representations with local context modeling for EEG-based emotion recognition
 
