@@ -30,6 +30,15 @@ def get_config(parse=True, **optional_kwargs):
     if parse:
         args=parser.parse_args()
 
+
+    if args.data_choice=='4':
+        args.n_classes=4
+    elif args.data_choice=='deap':
+        args.n_classes=2
+    else:
+        print('No dataset mentioned')
+        exit()
+    
     args = vars(args)
     args.update(optional_kwargs)
 
