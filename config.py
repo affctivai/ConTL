@@ -34,7 +34,7 @@ def get_config(parse=True, **optional_kwargs):
     if args.data_choice=='4':
         args.n_classes=4
     elif args.data_choice=='deap':
-        args.n_classes=2
+        args.n_classes=3
     else:
         print('No dataset mentioned')
         exit()
