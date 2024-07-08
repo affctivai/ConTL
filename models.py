@@ -49,8 +49,7 @@ class ConTL(nn.Module):
 
         return o
 
-    def sLSTM(self, x, lengths):
-        batch_size = lengths.size(0)
+    def sLSTM(self, x):
         packed_h1, (final_h1, _) = self.eeg_rnn1(x)
         _, (final_h2, _) = self.eeg_rnn2(final_h1)
 
@@ -62,17 +61,12 @@ class ConTL(nn.Module):
 
     def forward(self, x):
         o=self.convNet(x)
-             
-        lengths = torch.LongTensor([x.shape[1]]*x.size(0))
-
         o=self.fc_layer(o)
-
-          
         o=torch.unsqueeze(o, dim=0)
         o=self.transformer_encoder(o)
              
         if self.args.lstm:        
-            o = self.sLSTM(o, lengths)
+            o = self.sLSTM(o)
         else:
             o=torch.squeeze(o,axis=0)            
             o=self.fc(o)
@@ -81,5 +75,3 @@ class ConTL(nn.Module):
         return o
 
 
-
-#
