@@ -50,6 +50,8 @@ class ConTL(nn.Module):
         return o
 
     def sLSTM(self, x):
+        batch_size = x.shape[1]
+    
         packed_h1, (final_h1, _) = self.eeg_rnn1(x)
         _, (final_h2, _) = self.eeg_rnn2(final_h1)
 
