@@ -1,4 +1,3 @@
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 import torch.nn as nn
 import torch
@@ -52,7 +51,7 @@ class ConTL(nn.Module):
     def sLSTM(self, x):
         batch_size = x.shape[1]
     
-        packed_h1, (final_h1, _) = self.eeg_rnn1(x)
+        _, (final_h1, _) = self.eeg_rnn1(x)
         _, (final_h2, _) = self.eeg_rnn2(final_h1)
 
         o = torch.cat((final_h1, final_h2), dim=2).permute(1, 0, 2).contiguous().view(batch_size, -1)
