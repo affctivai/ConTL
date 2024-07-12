@@ -75,6 +75,42 @@ class ConTL(nn.Module):
         return o
 
 '''Baseline models'''
+class MT_CNN(nn.Module):
+    def __init__(self, args):
+        super(MT_CNN, self).__init__()
+
+        self.cnn_layer = nn.Sequential(
+            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=5, padding='same'),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Dropout(0.2),
+            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=4, padding='same'),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Dropout(0.2),
+            nn.Conv1d(in_channels=128, out_channels=256, kernel_size=4, padding='same'),
+            nn.ReLU(),
+            nn.BatchNorm1d(256),
+            nn.Dropout(0.2),
+            nn.Conv1d(in_channels=256, out_channels=64, kernel_size=1, padding='same'),
+            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.BatchNorm1d(64),
+            nn.Dropout(0.2),
+            Flatten(),
+            nn.Linear(9920,512),
+            nn.ReLU(),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.2)
+        )
+
+        self.fc = nn.Linear(in_features=512, out_features= args.n_classes)
+
+    def forward(self, x):
+        x=self.cnn_layer(x)
+        x=self.fc(x)
+
+        return x
+
 class CCNN(nn.Module):
     def __init__(self,args):
         super(CCNN, self).__init__()
@@ -173,7 +209,6 @@ class EEGNet(nn.Module):
         return x
 
 
-
 class PCRNN(nn.Module):
     def __init__(self,args):
         super(PCRNN, self).__init__()
@@ -239,45 +274,6 @@ class PCRNN(nn.Module):
         o = self.fusion_layer(fusion)
 
         return o
-
-
-
-class MT_CNN(nn.Module):
-    def __init__(self, args):
-        super(MT_CNN, self).__init__()
-
-        self.cnn_layer = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=5, padding='same'),
-            nn.ReLU(),
-            nn.BatchNorm1d(64),
-            nn.Dropout(0.2),
-            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=4, padding='same'),
-            nn.ReLU(),
-            nn.BatchNorm1d(128),
-            nn.Dropout(0.2),
-            nn.Conv1d(in_channels=128, out_channels=256, kernel_size=4, padding='same'),
-            nn.ReLU(),
-            nn.BatchNorm1d(256),
-            nn.Dropout(0.2),
-            nn.Conv1d(in_channels=256, out_channels=64, kernel_size=1, padding='same'),
-            nn.MaxPool1d(kernel_size=2, stride=2),
-            nn.BatchNorm1d(64),
-            nn.Dropout(0.2),
-            Flatten(),
-            nn.Linear(9920,512),
-            nn.ReLU(),
-            nn.BatchNorm1d(512),
-            nn.Dropout(0.2)
-        )
-
-        self.fc = nn.Linear(in_features=512, out_features= args.n_classes)
-
-    def forward(self, x):
-        x=self.cnn_layer(x)
-        x=self.fc(x)
-
-        return x
-
 
 #code adapted from: https://github.com/xueyunlong12589/DGCNN/blob/main/utils.py
 def normalize_A(A,lmax=2):
@@ -398,5 +394,145 @@ class DGCNN(nn.Module):
         result = self.fc(result)
 
         return result
+
+class PatchEmbedding(nn.Module):
+    def __init__(self, emb_size=40):
+        super().__init__()
+
+        self.shallownet = nn.Sequential(
+            nn.Conv1d(in_channels=1, out_channels=40, kernel_size=4, stride=1),
+            nn.Conv1d(in_channels=40, out_channels=40, kernel_size=4, stride=1),
+            nn.BatchNorm1d(40),
+            nn.ELU(),
+            nn.AvgPool1d(4,2),
+            nn.Dropout(0.5),
+            nn.Conv1d(in_channels=40, out_channels=40, kernel_size=1, stride=1),
+            Flatten(),
+            nn.Linear(6040,emb_size)
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        b, _, _ = x.shape
+        x = self.shallownet(x)
+        x= torch.unsqueeze(x, axis=1)
+        return x
+
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, emb_size, num_heads, dropout):
+        super().__init__()
+        self.emb_size = emb_size
+        self.num_heads = num_heads
+        self.keys = nn.Linear(emb_size, emb_size)
+        self.queries = nn.Linear(emb_size, emb_size)
+        self.values = nn.Linear(emb_size, emb_size)
+        self.att_drop = nn.Dropout(dropout)
+        self.projection = nn.Linear(emb_size, emb_size)
+
+    def forward(self, x: Tensor, mask: Tensor = None) -> Tensor:
+        queries = rearrange(self.queries(x), "b n (h d) -> b h n d", h=self.num_heads)
+        keys = rearrange(self.keys(x), "b n (h d) -> b h n d", h=self.num_heads)
+        values = rearrange(self.values(x), "b n (h d) -> b h n d", h=self.num_heads)
+        energy = torch.einsum('bhqd, bhkd -> bhqk', queries, keys)
+        if mask is not None:
+            fill_value = torch.finfo(torch.float32).min
+            energy.mask_fill(~mask, fill_value)
+
+        scaling = self.emb_size ** (1 / 2)
+        att = F.softmax(energy / scaling, dim=-1)
+        att = self.att_drop(att)
+        out = torch.einsum('bhal, bhlv -> bhav ', att, values)
+        out = rearrange(out, "b h n d -> b n (h d)")
+        out = self.projection(out)
+        return out
+
+
+class ResidualAdd(nn.Module):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+
+    def forward(self, x, **kwargs):
+        res = x
+        x = self.fn(x, **kwargs)
+        x += res
+        return x
+
+
+class FeedForwardBlock(nn.Sequential):
+    def __init__(self, emb_size, expansion, drop_p):
+        super().__init__(
+            nn.Linear(emb_size, expansion * emb_size),
+            nn.GELU(),
+            nn.Dropout(drop_p),
+            nn.Linear(expansion * emb_size, emb_size),
+        )
+
+
+class GELU(nn.Module):
+    def forward(self, input: Tensor) -> Tensor:
+        return input*0.5*(1.0+torch.erf(input/math.sqrt(2.0)))
+
+
+class TransformerEncoderBlock(nn.Sequential):
+    def __init__(self,
+                 emb_size,
+                 num_heads=10,
+                 drop_p=0.5,
+                 forward_expansion=4,
+                 forward_drop_p=0.5):
+        super().__init__(
+            ResidualAdd(nn.Sequential(
+                nn.LayerNorm(emb_size),
+                MultiHeadAttention(emb_size, num_heads, drop_p),
+                nn.Dropout(drop_p)
+            )),
+            ResidualAdd(nn.Sequential(
+                nn.LayerNorm(emb_size),
+                FeedForwardBlock(
+                    emb_size, expansion=forward_expansion, drop_p=forward_drop_p),
+                nn.Dropout(drop_p)
+            )
+            ))
+
+
+class TransformerEncoder(nn.Sequential):
+    def __init__(self, depth, emb_size):
+        super().__init__(*[TransformerEncoderBlock(emb_size) for _ in range(depth)])
+
+
+class ClassificationHead(nn.Sequential):
+    def __init__(self, emb_size, n_classes):
+        super().__init__()
+
+        # global average pooling
+        self.clshead = nn.Sequential(
+            Reduce('b n e -> b e', reduction='mean'),
+            nn.LayerNorm(emb_size),
+            nn.Linear(emb_size, n_classes)
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(emb_size, 256),
+            nn.ELU(),
+            nn.Dropout(0.5),
+            nn.Linear(256, 32),
+            nn.ELU(),
+            nn.Dropout(0.3),
+            nn.Linear(32, n_classes)
+        )
+
+    def forward(self, x):
+        x = x.contiguous().view(x.size(0), -1)
+        out = self.fc(x)
+
+        return x, out
+
+class Conformer(nn.Sequential):
+    def __init__(self, args, emb_size=40, depth=6, n_classes=4, **kwargs):
+        super().__init__(
+            PatchEmbedding(emb_size),
+            TransformerEncoder(depth, emb_size),
+            ClassificationHead(emb_size, args.n_classes)
+        )
 
 
