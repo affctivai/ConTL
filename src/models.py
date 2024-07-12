@@ -1,7 +1,10 @@
 import torch.nn as nn
 import torch
 
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch import Tensor
+from einops import rearrange
+from einops.layers.torch import Reduce
 import torch.nn.functional as F
 import math
 
@@ -68,16 +71,16 @@ class ConTL(nn.Module):
         o=self.convNet(x)
         o=self.fc_layer(o)
         o=torch.unsqueeze(o, dim=0)
-        o=self.transformer_encoder(o)
+        h=self.transformer_encoder(o)
              
         if self.args.lstm:        
-            o = self.sLSTM(o)
+            o = self.sLSTM(h)
         else:
-            o=torch.squeeze(o,axis=0)            
-            o=self.fc(o)
+            h=torch.squeeze(h,axis=0)            
+            o=self.fc(h)
         
          
-        return o
+        return h,o
 
 '''Baseline models'''
 class MT_CNN(nn.Module):

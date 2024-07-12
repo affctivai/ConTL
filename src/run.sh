@@ -1,6 +1,6 @@
-seed_four_path=/home/hyunwook_kang/SEED-IV/eeg_feature_smooth
+seed_four_path=/mnt/data/members/fusion/SEED-IV/eeg_feature_smooth
 
-ModelArray=("ConTL" "DGCNN")
+ModelArray=("ConTL" "DGCNN" "MT_CNN" "CCNN" "Conformer" "EEGNet")
 
 
 save_file_name=seed4_result.csv

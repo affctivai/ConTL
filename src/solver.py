@@ -98,7 +98,12 @@ class Solver(object):
             labels = labels.to(self.device)
             
            
-            outputs = self.model(features)
+            features = torch.unsqueeze(features, axis=1)
+           
+            if self.train_config.model_type in ['Conformer', 'ConTL']:
+                x, outputs = self.model(features)
+            else:
+                outputs = self.model(features)
           
             loss = self.criterion(outputs, labels)
         
@@ -136,7 +141,12 @@ class Solver(object):
     def eval_help(self,features, labels, epoch_loss, epoch_f1_score, total, correct):
 
 
-        outputs = self.model(features)
+        features = torch.unsqueeze(features, axis=1)
+       
+        if self.train_config.model_type in ['Conformer', 'ConTL']:
+            x, outputs = self.model(features)
+        else:
+            outputs = self.model(features)
 
         loss = self.criterion(outputs, labels)
         epoch_loss+=loss
