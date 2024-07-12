@@ -75,6 +75,44 @@ class ConTL(nn.Module):
         return o
 
 '''Baseline models'''
+
+class MT_CNN(nn.Module):
+    def __init__(self, args):
+        super(MT_CNN, self).__init__()
+
+        self.cnn_layer = nn.Sequential(
+            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=5, padding='same'),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Dropout(0.2),
+            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=4, padding='same'),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Dropout(0.2),
+            nn.Conv1d(in_channels=128, out_channels=256, kernel_size=4, padding='same'),
+            nn.ReLU(),
+            nn.BatchNorm1d(256),
+            nn.Dropout(0.2),
+            nn.Conv1d(in_channels=256, out_channels=64, kernel_size=1, padding='same'),
+            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.BatchNorm1d(64),
+            nn.Dropout(0.2),
+            Flatten(),
+            nn.Linear(9920,512),
+            nn.ReLU(),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.2)
+        )
+
+        self.fc = nn.Linear(in_features=512, out_features= args.n_classes)
+
+    def forward(self, x):
+        x=self.cnn_layer(x)
+        x=self.fc(x)
+
+        return x
+
+
 #code adapted from: https://github.com/xueyunlong12589/DGCNN/blob/main/utils.py
 def normalize_A(A,lmax=2):
     A=F.relu(A)
