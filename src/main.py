@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import os
 
+
 class CusEEGDataset(torch.utils.data.Dataset):
     def __init__(self, train_config, feature_list, label_list):
         self.train_config = train_config
@@ -17,21 +18,46 @@ class CusEEGDataset(torch.utils.data.Dataset):
         self.label_list = label_list
 
     def __getitem__(self, index):
-        if self.train_config.model_type=='ConTL':
-            self.feature_list[index]=np.reshape(self.feature_list[index], (self.feature_list[index].shape[0]* self.feature_list[index].shape[1]))
-           
-            if self.train_config.data_choice == 'deap':
-                self.feature_list[index] = np.resize(self.feature_list[index], [310,])        
-            self.feature_list[index] = np.expand_dims(self.feature_list[index], axis=0)   
+        
+        if self.train_config.data_choice in ['deap', 'dreamer']:
+            if not self.train_config.model_type =='DGCNN':
+                self.feature_list[index] = np.resize(self.feature_list[index], [310,])
+
+        if self.train_config.model_type=='EEGNet':
+            self.feature_list[index] = np.resize(self.feature_list[index], [120,64]) #eegNet
+        elif not self.train_config.model_type =='DGCNN':
+            self.feature_list[index] = np.reshape(self.feature_list[index], [310,])
         
         feature = torch.from_numpy(self.feature_list[index]).float()
-        
         label = torch.from_numpy(np.asarray(self.label_list[index])).long()
    
         return feature, label
 
     def __len__(self):
         return len(self.label_list)
+
+# class CusEEGDataset(torch.utils.data.Dataset):
+#     def __init__(self, train_config, feature_list, label_list):
+#         self.train_config = train_config
+#         self.feature_list = feature_list
+#         self.label_list = label_list
+
+#     def __getitem__(self, index):
+#         if self.train_config.model_type=='ConTL':
+#             self.feature_list[index]=np.reshape(self.feature_list[index], (self.feature_list[index].shape[0]* self.feature_list[index].shape[1]))
+           
+#             if self.train_config.data_choice == 'deap':
+#                 self.feature_list[index] = np.resize(self.feature_list[index], [310,])        
+#             self.feature_list[index] = np.expand_dims(self.feature_list[index], axis=0)   
+        
+#         feature = torch.from_numpy(self.feature_list[index]).float()
+        
+#         label = torch.from_numpy(np.asarray(self.label_list[index])).long()
+   
+#         return feature, label
+
+#     def __len__(self):
+#         return len(self.label_list)
 
 
 def train(X_train, X_val, X_test, y_train, y_val, y_test):
