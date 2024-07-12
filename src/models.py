@@ -75,6 +75,172 @@ class ConTL(nn.Module):
         return o
 
 '''Baseline models'''
+class CCNN(nn.Module):
+    def __init__(self,args):
+        super(CCNN, self).__init__()
+
+        self.conv1=nn.Conv1d(in_channels=1, out_channels=64, kernel_size=4, stride=1, padding='same')
+
+        self.conv2 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=4, stride=1,padding='same')
+
+        self.conv3 = nn.Conv1d(in_channels = 128, out_channels = 256, kernel_size=4, stride=1, padding='same')
+
+        self.conv3_2 = nn.Conv1d(in_channels=256, out_channels=64, kernel_size=1, stride=1, padding='same')
+
+        self.fc = nn.Sequential()
+        self.fc.add_module('fc_layer1', nn.Linear(in_features=19840, out_features=1024))
+        self.fc.add_module('fc_layer1_dropout', nn.Dropout(0.2))
+        self.fc.add_module('fc_layer2', nn.Linear(in_features=1024, out_features=args.n_classes))
+
+    def forward(self, x):
+        # print('x:', x.shape)
+        # exit()
+        # x=x.permute(1,0,2).contiguous()
+        batch_size=x.size(0)
+        x = self.conv1(x)
+        x=F.elu(x)
+        x = self.conv2(x)
+        x=F.elu(x)
+        x = self.conv3(x)
+        x=F.elu(x)
+        x = self.conv3_2(x)
+        x=F.elu(x)
+        x=x.view(batch_size,-1)
+
+        x = self.fc(x)
+
+        return x
+
+class EEGNet(nn.Module):
+    def __init__(self, args):
+        super(EEGNet, self).__init__()
+        self.T = 120
+
+        # Layer 1
+        self.conv1 = nn.Conv2d(1, 16, (1, 64), padding = 0)
+        self.batchnorm1 = nn.BatchNorm2d(16, False)
+
+        # Layer 2
+        self.padding1 = nn.ZeroPad2d((16, 17, 0, 1))
+        self.conv2 = nn.Conv2d(1, 4, (2, 32))
+        self.batchnorm2 = nn.BatchNorm2d(4, False)
+        self.pooling2 = nn.MaxPool2d(2, 4)
+
+        # Layer 3
+        self.padding2 = nn.ZeroPad2d((2, 1, 4, 3))
+        self.conv3 = nn.Conv2d(4, 4, (8, 4))
+        self.batchnorm3 = nn.BatchNorm2d(4, False)
+        self.pooling3 = nn.MaxPool2d((2, 4))
+
+        # FC Layer
+        # NOTE: This dimension will depend on the number of timestamps per sample in your data.
+        # I have 120 timepoints.
+        self.fc1 = nn.Linear(4*16*122, args.n_classes)
+        self.sigmoid= nn.Sigmoid()
+
+    def forward(self, x):
+
+        x = self.conv1(x)
+
+        x = self.batchnorm1(x)
+        x = F.dropout(x, 0.25)
+
+        x = x.permute(0, 3, 1, 2)
+
+        # Layer 2
+        x = self.padding1(x)
+
+        x = self.conv2(x)
+
+        x = self.batchnorm2(x)
+        x = F.dropout(x, 0.25)
+        # x = self.pooling2(x)
+
+        # Layer 3
+        x = self.padding2(x)
+        x = self.conv3(x)
+        x = self.batchnorm3(x)
+        x = F.dropout(x, 0.25)
+
+        # x = self.pooling3(x)
+
+        # FC Layer
+
+        x = x.reshape(-1, 4*16*122)
+
+        x = self.fc1(x)
+
+        return x
+
+
+
+class PCRNN(nn.Module):
+    def __init__(self,args):
+        super(PCRNN, self).__init__()
+        emb_size = 310
+        hidden_size = 256
+        in_features=19840
+
+        self.conv1=nn.Conv1d(in_channels=1, out_channels=64, kernel_size=4, stride=1, padding='same')
+
+        self.conv2 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=4, stride=1,padding='same')
+
+        self.conv3 = nn.Conv1d(in_channels = 128, out_channels = 256, kernel_size=4, stride=1, padding='same')
+
+        self.conv3_2 = nn.Conv1d(in_channels=256, out_channels=64, kernel_size=1, stride=1, padding='same')
+
+        self.fc = nn.Sequential()
+        self.fc.add_module('fc_layer1', nn.Linear(in_features=in_features, out_features=1024))
+        self.fc.add_module('fc_layer1_dropout', nn.Dropout(0.5))
+
+        rnn = nn.LSTM
+        self.eeg_rnn1 = rnn(emb_size, int(hidden_size), bidirectional = True)
+        self.eeg_rnn2 = rnn(2*int(hidden_size), int(hidden_size), bidirectional = True)
+        fc_input_size = 4*int(hidden_size)
+
+        self.fusion_layer = nn.Linear(in_features = 2048, out_features = args.n_classes)
+
+    def CNN(self, x):
+        batch_size=x.size(0)
+        x = self.conv1(x)
+        x=F.elu(x)
+        x = self.conv2(x)
+        x=F.elu(x)
+        x = self.conv3(x)
+        x=F.elu(x)
+        x = self.conv3_2(x)
+        x=F.elu(x)
+        x=x.view(batch_size,-1)
+
+        x = self.fc(x)
+
+        return x
+
+    def sLSTM(self, x, lengths):
+        x= x.permute(1,0,2)
+
+        batch_size = lengths.size(0)
+        lengths = lengths.detach().cpu().numpy()
+        p_seq = pack_padded_sequence(x, lengths)
+        packed_out1, (final_out1, _) = self.eeg_rnn1(p_seq)
+        padded_out1, _ = pad_packed_sequence(packed_out1)
+        packed_out2 = pack_padded_sequence(padded_out1, lengths)
+        _, (final_out2, _) = self.eeg_rnn2(packed_out2)
+        o = torch.cat((final_out1, final_out2), dim=2).permute(1, 0, 2).contiguous().view(batch_size, -1)
+
+        return o
+
+    def forward(self, x):
+        cnn_output = self.CNN(x)
+        lengths = torch.LongTensor([x.shape[1]]*x.size(0))
+        lstm_output = self.sLSTM(x, lengths)
+        fusion = torch.cat((cnn_output, lstm_output), dim=1).contiguous().view(lengths.size(0), -1)
+
+        o = self.fusion_layer(fusion)
+
+        return o
+
+
 
 class MT_CNN(nn.Module):
     def __init__(self, args):
