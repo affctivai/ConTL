@@ -3,7 +3,6 @@ import torch
 
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch import Tensor
-from einops import rearrange
 from einops.layers.torch import Reduce
 import torch.nn.functional as F
 import math
