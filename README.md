@@ -26,7 +26,7 @@ If this code is useful for your research, please cite us at:
   title={Cascading global and sequential temporal representations with local context modeling for EEG-based emotion recognition},
   author={Kang, Hyunwook and Choi, Jin Woo and Kim, Byung Hyung},
   conference={International Conference on Pattern Recognition (ICPR)},
-  pages={305--320}
+  pages={305--320},
   year={2024}
 }
 ```
